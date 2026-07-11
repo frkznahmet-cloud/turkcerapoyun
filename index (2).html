@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kör Sıralama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0B0D;
+    --panel: #151517;
+    --panel-2: #1D1D20;
+    --line: #2A2A2E;
+    --red: #C81E3A;
+    --red-dim: #7A1425;
+    --gold: #D4A94B;
+    --text: #EDEDEE;
+    --muted: #8A8A90;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(200,30,58,0.08), transparent 45%),
+      radial-gradient(circle at 80% 100%, rgba(200,30,58,0.06), transparent 45%);
+    color: var(--text);
+    font-family:'Inter', Arial, sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 24px 16px;
+  }
+  .wrap{ width:100%; max-width: 560px; }
+  .eyebrow{
+    text-align:center;
+    font-size:11px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color: var(--red);
+    margin: 0 0 6px;
+    font-weight:600;
+  }
+  h1{
+    font-family:'Oswald', sans-serif;
+    text-align:center;
+    font-size: 2rem;
+    letter-spacing: 1px;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+  }
+  .sub{
+    text-align:center;
+    color: var(--muted);
+    font-size: 13.5px;
+    margin: 0 0 26px;
+    line-height:1.5;
+  }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* --- Artist select --- */
+  .artist-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .artist-btn{
+    font-family:'Oswald', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 16px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    cursor:pointer;
+    text-align:center;
+  }
+  .artist-btn:hover{ border-color: var(--red); background: var(--panel-2); }
+  .artist-btn:disabled{
+    opacity: 0.35;
+    cursor: not-allowed;
+    position: relative;
+  }
+  .artist-btn:disabled::after{
+    content: "Yakında";
+    display:block;
+    font-family:'Inter', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: none;
+  }
+
+  /* --- Game screen --- */
+  .game-layout{
+    display:grid;
+    grid-template-columns: 100px 1fr;
+    gap: 16px;
+  }
+  .slots{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+  .slot{
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight:600;
+    color: var(--muted);
+    cursor:pointer;
+    text-align:center;
+    padding: 2px 4px;
+    overflow:hidden;
+  }
+  .slot .num{ color: var(--gold); margin-right: 4px; }
+  .slot.filled{
+    cursor:default;
+    border-color: var(--line);
+    background: var(--panel-2);
+    color: var(--text);
+    font-family:'Inter', sans-serif;
+    font-size: 10.5px;
+    font-weight:600;
+    line-height:1.2;
+  }
+  .slot.empty:hover{ border-color: var(--red); }
+  .slot .slot-title{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .main-col{ min-width:0; }
+  .progress-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 16px;
+  }
+  .progress-track{
+    flex:1;
+    height: 4px;
+    background: var(--panel-2);
+    border-radius: 2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background: var(--red);
+    transition: width 0.25s ease;
+  }
+  .progress-label{
+    font-family:'Oswald', sans-serif;
+    font-size: 12px;
+    color: var(--gold);
+    white-space:nowrap;
+  }
+  .prompt{
+    text-align:center;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform:uppercase;
+    margin-bottom: 12px;
+  }
+  .current-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 30px 16px;
+    text-align:center;
+    margin-bottom: 14px;
+  }
+  .current-artist{
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .current-title{
+    font-family:'Oswald', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .hint{
+    text-align:center;
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+  .swap-btn{
+    display:block;
+    margin: 0 auto;
+    font-family:'Inter', sans-serif;
+    font-size: 13px;
+    font-weight:600;
+    padding: 9px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    cursor:pointer;
+  }
+  .swap-btn:hover{ background: rgba(212,169,75,0.1); }
+  .swap-btn:disabled{
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: var(--line);
+    color: var(--muted);
+  }
+
+  .start-btn{
+    display:block;
+    margin: 22px auto 0;
+    font-family:'Oswald', sans-serif;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-size: 15px;
+    font-weight:600;
+    padding: 13px 30px;
+    border-radius: 4px;
+    border: none;
+    background: var(--red);
+    color: #fff;
+    cursor:pointer;
+  }
+  .start-btn:hover{ background:#B01831; }
+
+  /* --- Result screen --- */
+  .result-list{
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .result-item{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .result-item.top{
+    border-color: var(--gold);
+    background: linear-gradient(90deg, rgba(212,169,75,0.10), transparent);
+  }
+  .rank-num{
+    font-family:'Oswald', sans-serif;
+    font-size: 1.2rem;
+    font-weight:700;
+    color: var(--muted);
+    min-width: 26px;
+  }
+  .result-item.top .rank-num{ color: var(--gold); }
+  .rank-song{ font-size: 14.5px; font-weight:600; }
+  .actions{
+    display:flex;
+    justify-content:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .again-btn, .share-btn{
+    font-family:'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight:600;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    cursor:pointer;
+  }
+  .again-btn:hover{ border-color: var(--red); }
+  .share-btn{
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .share-btn:hover{ background: rgba(212,169,75,0.1); }
+
+  /* --- Mode select --- */
+  .mode-grid{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
+  .mode-btn{
+    text-align:left;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    cursor:pointer;
+  }
+  .mode-btn:hover{ border-color: var(--red); background: var(--panel-2); }
+  .mode-title{
+    font-family:'Oswald', sans-serif;
+    font-size: 1.15rem;
+    font-weight:600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .mode-desc{
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height:1.4;
+  }
+  .back-link{
+    display:block;
+    text-align:center;
+    background:none;
+    border:none;
+    color: var(--muted);
+    font-family:'Inter', sans-serif;
+    font-size: 12.5px;
+    cursor:pointer;
+    margin: 0 0 18px;
+    text-decoration: underline;
+  }
+  .back-link:hover{ color: var(--text); }
+
+  /* --- Quiz screen --- */
+  .lyric-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 24px 20px;
+    margin-bottom: 18px;
+    font-size: 15.5px;
+    line-height: 1.7;
+    font-style: italic;
+    color: var(--text);
+    white-space: pre-line;
+  }
+  .quiz-artist-tag{
+    text-align:center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .quiz-options{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quiz-option{
+    font-family:'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight:600;
+    padding: 14px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    cursor:pointer;
+    text-align:center;
+  }
+  .quiz-option:hover:not(:disabled){ border-color: var(--gold); background: var(--panel-2); }
+  .quiz-option:disabled{ cursor: default; }
+  .quiz-option.correct{
+    border-color: #3EA65C;
+    background: rgba(62,166,92,0.14);
+    color: #7CDB98;
+  }
+  .quiz-option.wrong{
+    border-color: var(--red);
+    background: rgba(200,30,58,0.14);
+    color: #FF8A9B;
+  }
+  .quiz-option.eliminated{
+    opacity: 0.3;
+    text-decoration: line-through;
+  }
+
+  /* --- Quiz result --- */
+  .score-big{
+    text-align:center;
+    font-family:'Oswald', sans-serif;
+    font-size: 3.2rem;
+    font-weight:700;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .score-sub{
+    text-align:center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .review-list{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  .review-item{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .review-item .mark{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    min-width: 18px;
+  }
+  .review-item.ok .mark{ color: #3EA65C; }
+  .review-item.no .mark{ color: var(--red); }
+  .review-song{ font-weight:600; }
+  .review-chosen{ color: var(--muted); font-size: 12px; }
+
+  /* --- Tournament --- */
+  .cards{
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+  }
+  .or-sep{
+    text-align:center;
+    color: var(--red);
+    font-family:'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing:3px;
+    margin: -2px 0;
+  }
+  .match-card{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 26px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color 0.15s, transform 0.1s, background 0.15s;
+  }
+  .match-card:hover{
+    border-color: var(--red);
+    background: var(--panel-2);
+    transform: translateY(-1px);
+  }
+  .match-card:active{ transform: translateY(0); }
+  .match-song{
+    font-family:'Oswald', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .match-artist{
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .champion-card{
+    background: var(--panel);
+    border: 1px solid var(--gold);
+    background: linear-gradient(180deg, rgba(212,169,75,0.10), transparent);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align:center;
+    margin-bottom: 22px;
+  }
+  .champion-song{
+    font-family:'Oswald', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.5px;
+  }
+  .champion-artist{
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* --- Tier list --- */
+  .tier-btn-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .tier-btn{
+    font-family:'Oswald', sans-serif;
+    font-size: 14px;
+    font-weight:600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 14px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor:pointer;
+    text-align:center;
+    color: #14140f;
+  }
+  .tier-btn:hover{ filter: brightness(1.1); }
+
+  .tier-result-list{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .tier-row{
+    display:flex;
+    border-radius: 8px;
+    overflow:hidden;
+    border: 1px solid var(--line);
+  }
+  .tier-row-label{
+    width: 100px;
+    min-width: 100px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: #14140f;
+    padding: 10px 6px;
+  }
+  .tier-row-songs{
+    flex:1;
+    background: var(--panel);
+    padding: 10px 14px;
+    display:flex;
+    flex-wrap:wrap;
+    gap: 6px;
+    align-items:center;
+    font-size: 13px;
+  }
+  .tier-chip{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 4px 9px;
+    white-space:nowrap;
+  }
+  .tier-row-empty{
+    color: var(--muted);
+    font-size: 12px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- MODE SELECT -->
+  <div class="screen active" id="modeScreen">
+    <p class="eyebrow">seç</p>
+    <h1>Oyun Modu</h1>
+    <p class="sub">Nasıl oynamak istersin?</p>
+    <div class="mode-grid">
+      <button class="mode-btn" id="rankModeBtn">
+        <div class="mode-title">Kör Sıralama</div>
+        <div class="mode-desc">Sıradakini bilmeden 10 şarkıyı en sevdiğinden en az sevdiğine sırala.</div>
+      </button>
+      <button class="mode-btn" id="quizModeBtn">
+        <div class="mode-title">Söz Quizi</div>
+        <div class="mode-desc">Şarkı sözünü oku, doğru şarkıyı 4 şıktan bul. 10 soru, zorlu mod.</div>
+      </button>
+      <button class="mode-btn" id="tournamentModeBtn">
+        <div class="mode-title">Turnuva</div>
+        <div class="mode-desc">Veritabanındaki TÜM şarkılar karşı karşıya. Eleme usulü ilerle, şampiyonu belirle. Uzun sürebilir.</div>
+      </button>
+      <button class="mode-btn" id="tierModeBtn">
+        <div class="mode-title">Tier List</div>
+        <div class="mode-desc">Bir sanatçının tüm şarkılarını EN İYİ'den ÇOK KÖTÜ'ye kategorilere ayır.</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ARTIST SELECT -->
+  <div class="screen" id="artistScreen">
+    <button class="back-link" id="backToModeBtn">← Mod Değiştir</button>
+    <p class="eyebrow" id="artistEyebrow">kör sıralama</p>
+    <h1 id="artistTitle">Sanatçını Seç</h1>
+    <p class="sub" id="artistSub">Rastgele gelen 10 şarkıyı, sıradakini bilmeden en sevdiğinden en az sevdiğine sırala.</p>
+    <div class="artist-grid" id="artistGrid"></div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="gameScreen">
+    <p class="eyebrow" id="gameArtistLabel">kör sıralama</p>
+    <div class="game-layout">
+      <div class="slots" id="slots"></div>
+      <div class="main-col">
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-label" id="progressLabel">0 / 10</div>
+        </div>
+        <p class="prompt">Bu şarkıyı hangi sıraya koyuyorsun?</p>
+        <div class="current-card">
+          <div class="current-artist" id="currentArtist"></div>
+          <div class="current-title" id="currentTitle"></div>
+        </div>
+        <p class="hint">Soldan boş bir numaraya tıklayarak yerleştir</p>
+        <button class="swap-btn" id="swapBtn">Değiştir (1 hakkın var)</button>
+        <button class="again-btn" id="restartBtn" style="display:block; margin: 10px auto 0;">Baştan Yap</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="resultScreen">
+    <p class="eyebrow" id="resultArtistLabel">sonuç</p>
+    <h1>Senin Sıralaman</h1>
+    <div class="result-list" id="resultList"></div>
+    <div class="actions">
+      <button class="again-btn" id="againBtn">Tekrar Oyna</button>
+      <button class="again-btn" id="changeArtistBtn">Sanatçı Değiştir</button>
+      <button class="share-btn" id="shareBtn">Paylaş</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="quizScreen">
+    <p class="eyebrow" id="quizArtistLabel">söz quizi</p>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="quizProgressFill"></div></div>
+      <div class="progress-label" id="quizProgressLabel">1 / 10</div>
+    </div>
+    <p class="prompt">Bu söz hangi şarkıya ait?</p>
+    <div class="lyric-card" id="quizLyric"></div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <button class="swap-btn" id="jokerBtn" style="margin-top:14px;">Joker (1 hakkın var)</button>
+  </div>
+
+  <!-- QUIZ RESULT -->
+  <div class="screen" id="quizResultScreen">
+    <p class="eyebrow" id="quizResultArtistLabel">sonuç</p>
+    <h1>Söz Quizi Bitti</h1>
+    <div class="score-big" id="quizScoreBig">0 / 10</div>
+    <p class="score-sub" id="quizScoreSub"></p>
+    <div class="review-list" id="quizReviewList"></div>
+    <div class="actions">
+      <button class="again-btn" id="quizAgainBtn">Tekrar Oyna</button>
+      <button class="again-btn" id="quizChangeArtistBtn">Sanatçı Değiştir</button>
+      <button class="share-btn" id="quizShareBtn">Paylaş</button>
+    </div>
+  </div>
+
+  <!-- TOURNAMENT SIZE SELECT -->
+  <div class="screen" id="tourSizeScreen">
+    <button class="back-link" id="backToModeFromSizeBtn">← Mod Değiştir</button>
+    <p class="eyebrow">turnuva</p>
+    <h1>Kaç Şarkı?</h1>
+    <p class="sub" id="tourSizeSub">Veritabanındaki şarkılardan istediğin boyutta bir turnuva seç.</p>
+    <div class="artist-grid" id="tourSizeGrid"></div>
+  </div>
+
+  <!-- TOURNAMENT -->
+  <div class="screen" id="tournamentScreen">
+    <p class="eyebrow">turnuva</p>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="tourProgressFill"></div></div>
+      <div class="progress-label" id="tourProgressLabel"></div>
+    </div>
+    <p class="prompt" id="tourRoundLabel">Tur 1</p>
+    <div class="cards">
+      <div class="match-card" id="tourCardA">
+        <div class="match-song" id="tourTitleA"></div>
+        <div class="match-artist" id="tourArtistA"></div>
+      </div>
+      <div class="or-sep">VS</div>
+      <div class="match-card" id="tourCardB">
+        <div class="match-song" id="tourTitleB"></div>
+        <div class="match-artist" id="tourArtistB"></div>
+      </div>
+    </div>
+    <button class="again-btn" id="tourQuitBtn" style="display:block; margin: 18px auto 0;">Turnuvayı Terk Et</button>
+  </div>
+
+  <!-- TOURNAMENT RESULT -->
+  <div class="screen" id="tourResultScreen">
+    <p class="eyebrow">şampiyon</p>
+    <h1>🏆 Turnuva Bitti</h1>
+    <div class="champion-card">
+      <div class="champion-song" id="championSong"></div>
+      <div class="champion-artist" id="championArtist"></div>
+    </div>
+    <div class="actions">
+      <button class="again-btn" id="tourAgainBtn">Yeni Turnuva</button>
+      <button class="again-btn" id="tourMenuBtn">Ana Menü</button>
+      <button class="share-btn" id="tourShareBtn">Paylaş</button>
+    </div>
+  </div>
+
+  <!-- TIER LIST -->
+  <div class="screen" id="tierScreen">
+    <p class="eyebrow" id="tierArtistLabel">tier list</p>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="tierProgressFill"></div></div>
+      <div class="progress-label" id="tierProgressLabel"></div>
+    </div>
+    <p class="prompt">Bu şarkıyı nereye koyuyorsun?</p>
+    <div class="current-card">
+      <div class="current-artist" id="tierCurrentArtist"></div>
+      <div class="current-title" id="tierCurrentTitle"></div>
+    </div>
+    <div class="tier-btn-grid" id="tierBtnGrid"></div>
+  </div>
+
+  <!-- TIER LIST RESULT -->
+  <div class="screen" id="tierResultScreen">
+    <p class="eyebrow" id="tierResultArtistLabel">tier list</p>
+    <h1>Tier List'in Hazır</h1>
+    <div class="tier-result-list" id="tierResultList"></div>
+    <div class="actions">
+      <button class="again-btn" id="tierAgainBtn">Tekrar Yap</button>
+      <button class="again-btn" id="tierChangeArtistBtn">Sanatçı Değiştir</button>
+      <button class="share-btn" id="tierShareBtn">Paylaş</button>
+    </div>
+  </div>
+
+</div>
+
+<canvas id="shareCanvas" width="1080" height="1350" style="display:none;"></canvas>
+
+<script>
+  // ---- SONG POOLS ----
+  // Her sanatçı için en az 10 şarkı olmalı ki seçilebilsin.
+  const SONG_POOLS = {
+    "Şehinşah": [
+      "Karma", "Yak Yak Yak", "Pirana", "Milyon", "Koyu", "Var Arantım",
+      "Hepsi Benim 2", "Plüton", "Arkadaş", "Dünyadan Atlasa", "İmza",
+      "Sayın Türk", "Hiphop Okulu", "Labirent", "İst/Taksimi", "Kyoto/Geisha",
+      "RDH2", "Güller ve Rhyme", "İstila", "Galvanize", "Rehabilite",
+      "Dilemma", "Vah Vahap Vah", "H.A.G.G.G", "İntro(666)", "Sendeliyorum",
+      "+28 - Tirat", "IKARUS", "Kapatıyoruz", "En Eskiden Beri",
+      "Züğürdün Çenesi", "Deliricem", "Çivi", "yAllah", "Cırcus"
+    ],
+    "Sagopa Kajmer": [
+      "Gölge Haramileri", "Baytar", "366. Gün", "Ateşten Gömlek", "Galiba",
+      "Merhametine Dön", "Vasiyet", "24", "Sabah Fabrikam",
+      "Avutsun Bahaneler", "Meftun", "Geceler", "Bu Sen Değilsin",
+      "Oldu Olanlar", "Bir Pesimistin Gözyaşları", "Ahmak Islatan",
+      "Istakoz", "Vesselam", "Terapi", "Halen", "Ben Hüsrana Komşuyum",
+      "Bir Kulaç Daha Atsam Karadayım", "Karikatür Komedya",
+      "Düşersem Yanarım", "Kötü İnsanları Tanıma Senesi", "Elbet",
+      "Söylenecek Çok Şey Var", "Bla Bla Bla Bla", "Romantizma",
+      "Bebeğim Öldü", "Drama Yolları", "Kopya Kalpler", "Kim", "Muamma",
+      "Karabiber Duası"
+    ],
+    "Ceza": [
+      "Kim Bilir", "Medcezir", "Meclisi Ala", "Yerli Plaka", "Neyim Var Ki",
+      "Holocaust", "Suspus", "Fark Var", "Gelsin Hayat Bildiği Gibi",
+      "Fight Kulüp", "Soğuk Mevsim", "Beatcoin", "Türk Marşı",
+      "Fight Kulüp 2", "Ben Ağlamazken", "Delight", "Panorama Harem",
+      "Rapstar", "Feyz Al", "Yok Geri Dönmek", "Yeni Mesaj", "İtirazım Var",
+      "Komedi v Dram", "Kim Olduğunu Unut", "Kördüğüm",
+      "Milyon Farklı Hikaye", "Sabah Bastı Geceyi", "Dark Places",
+      "Kime Anlatsam", "Denizci", "Analog", "Ders Al", "Çivi Gibi Çak",
+      "Savaş Çocukları", "Netflex"
+    ],
+    "Hidra": [
+      "Kudurtan Şehir", "Ölüme İnat", "Aynı Dündeyiz", "Ressam",
+      "Burası Dünya Değil", "Gibi", "Nabız", "Yenilmez", "Çünkü Bu",
+      "Neden mi İllegal 3", "Burası Dünya", "Beyaz Diş", "Beddua",
+      "High", "İmza", "Katliam 4", "İSTEMEM", "Prestij", "Labirent",
+      "Karıncalar", "Bağırın", "Ölüme İnat 2", "Uzağa Gidelim",
+      "Ezilmiş Çocuklar", "Krang", "Lirikal Ağ", "Dönecek Yeniden",
+      "Kriz Gibi Geri Geldim", "Kadınlar", "Ölüm Kalım Günü", "Gezegen",
+      "Merhamet", "Holigan", "Var", "Kimsin Sen"
+    ],
+    "Ceg": [
+      "First Class", "Kafamız Matiz", "Tımarhane 2.0", "Karındeşen Ceg",
+      "Bu Gece", "Gerçekleşebilir", "S2mde Değil", "Şarkı Sözleri", "Anormal",
+      "Şaka", "Dünya Umrumda Değil", "Prestij", "Pirus Zaferi", "Eski Jagged",
+      "Yeşillendir", "Mangır", "Extrovert", "Introvert", "Mükemmeliyetçi",
+      "Normal", "Asi", "Luxuria", "Okunmuş Pirinç X Tevazu",
+      "Çürümüş Bahçeleri Notre Dame", "Mani", "Teşekkürler", "Hipomani",
+      "Sosyopat", "Şampanya", "Sokaklar", "Ölümün Kuzeni", "Dedemin Anadol'u",
+      "Hennessy", "Neden", "Bafi", "Onlar Acımı Bilemez Hacım", "Manyak Şey",
+      "Merhaba", "Hırsız Var", "Böyle Olmayı İstemedim", "Vaşak", "Nefret",
+      "Ciro"
+    ],
+    "Ezhel": [
+      "Geceler", "Nerdesin", "Bi Sonraki Hayatımda Gel", "Bul Beni",
+      "Felaket", "İmkansızım", "AYA", "Devam", "Bazen", "Margiela",
+      "Wir Sind Kral", "Şehrimin Tadı", "Küvet", "KAFA10", "Derman",
+      "Fight Kulüp", "YKKE", "Yemin Olsun", "Duman", "Pofuduk",
+      "Kadehimi Boş Bırakma", "Made In Turkey", "Bir Daha", "Anadolu Flex",
+      "Nefret", "Ağla", "Benim Hayaller", "Kapat Işıklarını", "İyi Bil",
+      "Hayır", "Utanıyorum", "Ankaradayız", "Deli Mi Ne", "12", "Alabora"
+    ],
+    "Kayra": [
+      "Mesela Yani", "Basit Birer Tesadüf", "Hikaye Bitti Çoktan",
+      "Mertel Kasetçilik", "Savrulur Zaman", "Hayırsız Evlat",
+      "Kafamda Cehennem", "Çok Yaşlıyım", "Kül Kalır", "Olmadım Say",
+      "Dobro Vecer", "Unutulanlar", "Alt Geçit", "Rezil ve Yalnız",
+      "Bağışla", "Tutmayan Kuponlarım Var", "CM 01-02", "Emekli Kahvesi",
+      "Kar", "Dokunmayarayaparsın", "Ölüler Konuşamaz",
+      "Bir Fotoğrafın Rüyası", "15 Eylül 1966", "Yangın"
+    ],
+    "Sansar Salvo": [
+      "Bombalar Hedef Bulur", "Pisi Pisine", "Tasdikname", "Korkak Çocuk",
+      "Ağır Roman", "Albert De Salvo", "34 Dramı", "Ne", "Dum Taka Dum",
+      "Paranı Verdim", "Ölürsem Bugün", "Gözlerimin İçinde", "Kırmızı Reçete",
+      "Şerefsiz", "Sigara Yanınca", "Duygusal Olmaya Gerek Yok",
+      "İblisin Oyunları", "Sorgu", "24. Şarjör", "Duruşma", "Kördüğüm",
+      "Ateş", "Hey", "Oyunun Anlamı"
+    ],
+    "No.1": [
+      "Bu Benim Hayatım", "Böyle İyi", "Yarım Kalan Sigara", "Dünya Gül Bana",
+      "İstanbul", "Tekel Mavisi", "Ateş ve Barut", "Hiç Işık Yok", "Uçurumlar",
+      "Junkie Jumping", "Aşkı Masal", "Full Time Tragedy",
+      "Canımız Cehenneme", "When I Die", "Paparoz", "Roberto Cavalli",
+      "Ellere Bıraktın", "Sis", "Nefes Alamıyorum",
+      "Karanlıkta Güneşlenenler", "Çiçeklerde Bir Telaş Var"
+    ],
+    "Khontkar": [
+      "JENGA", "Gelemem", "Beamer Boi", "Geldiğim Yer", "Olamam İflah",
+      "Yolumuz Yol Değil", "Fight Kulüp 2", "Kime Ne", "Zengin", "Legal",
+      "Koy", "Canın Çıkar", "Sürtüğe Bak", "Heyecanlanman Normal",
+      "Umrumda Değil", "Hennessy", "Kayıp Oğlan", "Olmaz", "Hepsi Geçecek",
+      "SİS", "Bang Bang", "Gözyaşı Rapsodi 3", "ANTEN FREESTYLE (PLA4 INTRO)",
+      "Asla", "Sence Neden", "YALNIZ ADAM", "SUÇ", "Solucan", "Kavrayamaz",
+      "Doymaz Hiç", "TAROT", "İŞİNE BAK", "KORUMASIZ GEZİYOM", "SAHİDEN",
+      "Mezuniyet"
+    ],
+    "Çağrı Sinci": [
+      "Lobotomi", "Sokak Boştu", "Cambaza Bak", "Çakmak Gazı", "Öteki",
+      "Kaçamadım", "Sokakların Manevi Çocukları", "Revolver", "Hayattayız",
+      "Kırık Haramiler", "Başkası", "Kusursuz Gün", "Kir", "Mesele",
+      "Yanlışın Var", "Melekler", "Tuhaf Hikaye", "Bazen", "Hep Biz Öldük",
+      "Daha Neler", "İstanbul's Finest", "Piromani", "İki Yaka", "Plasebo",
+      "Bak İşine", "Kreşendo"
+    ]
+  };
+  const ROUND_SIZE = 10;
+  const QUIZ_ROUND_SIZE = 10;
+
+  // ---- QUIZ BANKS ----
+  // Söz quizi için her sanatçının en az 10 sorusu olmalı ki seçilebilsin.
+  // Format: { lyric: "söz alıntısı", correct: "SONG_POOLS içindeki tam şarkı adı" }
+  // Yanlış şıklar otomatik olarak aynı sanatçının SONG_POOLS listesinden rastgele seçilir.
+  // Telif nedeniyle gerçek şarkı sözlerini ben ekleyemiyorum — bu listeleri siz dolduracaksınız.
+  const QUIZ_BANKS = {
+    "Şehinşah": [
+      { lyric: "Hepsi peşimde, yaraları derinde", correct: "İntro(666)" },
+      { lyric: "Biz değil ben desin, sen istediğinde bitmeli", correct: "Arkadaş" },
+      { lyric: "Sürüden uzaktayım, uslanmazım hissedeyim", correct: "Koyu" },
+      { lyric: "Beni yaralayamaz hakkımda atılan iddialar", correct: "Pirana" },
+      { lyric: "Kırdır birbirimizi 250 gram için", correct: "RDH2" },
+      { lyric: "Kapıda mekanın arka tarafına çağır da kaçalım aracı", correct: "Rehabilite" },
+      { lyric: "Ava yapışır, havada kara kanla sulanır", correct: "Dilemma" },
+      { lyric: "Zor hayatlarımız imzamı atarım", correct: "Plüton" },
+      { lyric: "Bana sıcak sıcak verin intikamı", correct: "Vah Vahap Vah" },
+      { lyric: "Pop piyasası bitti lan", correct: "İstila" },
+      { lyric: "Riski var evet ama gene riski aldık", correct: "İstila" },
+      { lyric: "Gül bebeğim hepsi senin için", correct: "Güller ve Rhyme" },
+      { lyric: "Maharetin ağrılarıma derman oluyor inan", correct: "Kyoto/Geisha" },
+      { lyric: "O zaman arda bakma karma-marma", correct: "Milyon" },
+      { lyric: "Cımbız kullan, mikrofonu bırak, dımdızlak kal", correct: "Hiphop Okulu" },
+      { lyric: "Yarışın içinde çamura bulanır", correct: "Dünyadan Atlasa" }
+    ],
+    "Sagopa Kajmer": [],
+    "Ceza": [],
+    "Hidra": [],
+    "Ceg": [
+      { lyric: "Alter egomun hobisi rhyme", correct: "First Class" },
+      { lyric: "İşiniz gücünüz fitne fesat", correct: "Kafamız Matiz" },
+      { lyric: "Şu an olmak istediğim yerdeyim kesin", correct: "Kafamız Matiz" },
+      { lyric: "Yol sapar ve sosyopat ruhlar sokakta, dosyalar full", correct: "Tımarhane 2.0" },
+      { lyric: "Daha bi yıl olmadı iş beni boğdu", correct: "Karındeşen Ceg" },
+      { lyric: "Asi biriyim, biraz sansi gibiyim", correct: "Karındeşen Ceg" },
+      { lyric: "Adamım yakala ritimi, o zaman havaya girelim", correct: "Bu Gece" },
+      { lyric: "Yaya geçirip gerdim oku", correct: "Gerçekleşebilir" },
+      { lyric: "Yine de çözemiyorum hayatımdaki problemleri", correct: "S2mde Değil" },
+      { lyric: "Tanımam yasa, kural; oynar her masa kumar", correct: "Şarkı Sözleri" },
+      { lyric: "Beni ediyo her şey huzursuz", correct: "Mükemmeliyetçi" },
+      { lyric: "Ayıkken insanlara katlanabilmek", correct: "Normal" },
+      { lyric: "Noldu galip mi geldim", correct: "Anormal" }
+    ],
+    "Ezhel": [],
+    "Kayra": [],
+    "Sansar Salvo": [],
+    "No.1": [],
+    "Khontkar": [],
+    "Çağrı Sinci": []
+  };
+
+  const artistScreen = document.getElementById('artistScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const resultScreen = document.getElementById('resultScreen');
+  const modeScreen = document.getElementById('modeScreen');
+  const quizScreen = document.getElementById('quizScreen');
+  const quizResultScreen = document.getElementById('quizResultScreen');
+  const rankModeBtn = document.getElementById('rankModeBtn');
+  const quizModeBtn = document.getElementById('quizModeBtn');
+  const backToModeBtn = document.getElementById('backToModeBtn');
+  const artistEyebrow = document.getElementById('artistEyebrow');
+  const artistTitle = document.getElementById('artistTitle');
+  const artistSub = document.getElementById('artistSub');
+  const artistGrid = document.getElementById('artistGrid');
+  const slotsEl = document.getElementById('slots');
+  const progressFill = document.getElementById('progressFill');
+  const progressLabel = document.getElementById('progressLabel');
+  const currentArtist = document.getElementById('currentArtist');
+  const currentTitle = document.getElementById('currentTitle');
+  const swapBtn = document.getElementById('swapBtn');
+  const gameArtistLabel = document.getElementById('gameArtistLabel');
+  const resultArtistLabel = document.getElementById('resultArtistLabel');
+  const resultList = document.getElementById('resultList');
+  const againBtn = document.getElementById('againBtn');
+  const changeArtistBtn = document.getElementById('changeArtistBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const quizArtistLabel = document.getElementById('quizArtistLabel');
+  const quizProgressFill = document.getElementById('quizProgressFill');
+  const quizProgressLabel = document.getElementById('quizProgressLabel');
+  const quizLyric = document.getElementById('quizLyric');
+  const quizOptions = document.getElementById('quizOptions');
+  const jokerBtn = document.getElementById('jokerBtn');
+  const quizResultArtistLabel = document.getElementById('quizResultArtistLabel');
+  const quizScoreBig = document.getElementById('quizScoreBig');
+  const quizScoreSub = document.getElementById('quizScoreSub');
+  const quizReviewList = document.getElementById('quizReviewList');
+  const quizAgainBtn = document.getElementById('quizAgainBtn');
+  const quizChangeArtistBtn = document.getElementById('quizChangeArtistBtn');
+  const quizShareBtn = document.getElementById('quizShareBtn');
+
+  const tournamentScreen = document.getElementById('tournamentScreen');
+  const tourResultScreen = document.getElementById('tourResultScreen');
+  const tournamentModeBtn = document.getElementById('tournamentModeBtn');
+  const tourSizeScreen = document.getElementById('tourSizeScreen');
+  const tourSizeGrid = document.getElementById('tourSizeGrid');
+  const backToModeFromSizeBtn = document.getElementById('backToModeFromSizeBtn');
+  const tourProgressFill = document.getElementById('tourProgressFill');
+  const tourProgressLabel = document.getElementById('tourProgressLabel');
+  const tourRoundLabel = document.getElementById('tourRoundLabel');
+  const tourCardA = document.getElementById('tourCardA');
+  const tourCardB = document.getElementById('tourCardB');
+  const tourTitleA = document.getElementById('tourTitleA');
+  const tourArtistA = document.getElementById('tourArtistA');
+  const tourTitleB = document.getElementById('tourTitleB');
+  const tourArtistB = document.getElementById('tourArtistB');
+  const tourQuitBtn = document.getElementById('tourQuitBtn');
+  const championSong = document.getElementById('championSong');
+  const championArtist = document.getElementById('championArtist');
+  const tourAgainBtn = document.getElementById('tourAgainBtn');
+  const tourMenuBtn = document.getElementById('tourMenuBtn');
+  const tourShareBtn = document.getElementById('tourShareBtn');
+
+  const tierScreen = document.getElementById('tierScreen');
+  const tierResultScreen = document.getElementById('tierResultScreen');
+  const tierModeBtn = document.getElementById('tierModeBtn');
+  const tierArtistLabel = document.getElementById('tierArtistLabel');
+  const tierProgressFill = document.getElementById('tierProgressFill');
+  const tierProgressLabel = document.getElementById('tierProgressLabel');
+  const tierCurrentArtist = document.getElementById('tierCurrentArtist');
+  const tierCurrentTitle = document.getElementById('tierCurrentTitle');
+  const tierBtnGrid = document.getElementById('tierBtnGrid');
+  const tierResultArtistLabel = document.getElementById('tierResultArtistLabel');
+  const tierResultList = document.getElementById('tierResultList');
+  const tierAgainBtn = document.getElementById('tierAgainBtn');
+  const tierChangeArtistBtn = document.getElementById('tierChangeArtistBtn');
+  const tierShareBtn = document.getElementById('tierShareBtn');
+
+  let selectedMode = 'rank';
+  let selectedArtist = null;
+  let queue = [];
+  let extras = [];
+  let slots = new Array(ROUND_SIZE).fill(null);
+  let placedCount = 0;
+  let currentSong = null;
+  let swapUsed = false;
+
+  let quizQuestions = [];
+  let quizIndex = 0;
+  let quizScore = 0;
+  let quizReview = [];
+  let quizLocked = false;
+  let jokerUsed = false;
+
+  let tourBracketSize = 0;
+  let tourTotalRounds = 0;
+  let tourCurrentRound = 1;
+  let tourRoundPool = [];
+  let tourRoundWinners = [];
+  let tourMatchQueue = [];
+  let tourMatchIndex = 0;
+  let tourMatchesDone = 0;
+  let tourTotalMatches = 0;
+
+  const TIER_CATEGORIES = [
+    { key: 'EN İYİ', color: '#D4A94B' },
+    { key: 'ÇOK İYİ', color: '#6BBF59' },
+    { key: 'İYİ', color: '#8FCB7A' },
+    { key: 'ORTA', color: '#E8C547' },
+    { key: 'KÖTÜ', color: '#E08A3C' },
+    { key: 'ÇOK KÖTÜ', color: '#C81E3A' },
+    { key: 'BİLMİYORUM', color: '#8A8A90' }
+  ];
+  let tierArtist = null;
+  let tierSongs = [];
+  let tierIndex = 0;
+  let tierAssignments = {};
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function showScreen(el){
+    [modeScreen, artistScreen, gameScreen, resultScreen, quizScreen, quizResultScreen, tourSizeScreen, tournamentScreen, tourResultScreen, tierScreen, tierResultScreen].forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function buildArtistGrid(mode){
+    selectedMode = mode;
+    if(mode === 'rank'){
+      artistEyebrow.textContent = 'kör sıralama';
+      artistTitle.textContent = 'Sanatçını Seç';
+      artistSub.textContent = 'Rastgele gelen 10 şarkıyı, sıradakini bilmeden en sevdiğinden en az sevdiğine sırala.';
+    } else if(mode === 'quiz') {
+      artistEyebrow.textContent = 'söz quizi';
+      artistTitle.textContent = 'Sanatçını Seç';
+      artistSub.textContent = 'Şarkı sözünü oku, doğru şarkıyı 4 şıktan bul. 10 soru var.';
+    } else {
+      artistEyebrow.textContent = 'tier list';
+      artistTitle.textContent = 'Sanatçını Seç';
+      artistSub.textContent = 'Seçtiğin sanatçının tüm şarkılarını EN İYİ\'den ÇOK KÖTÜ\'ye kategorile.';
+    }
+
+    artistGrid.innerHTML = '';
+    Object.keys(SONG_POOLS).forEach(artist => {
+      const btn = document.createElement('button');
+      btn.className = 'artist-btn';
+      btn.textContent = artist;
+
+      if(mode === 'rank'){
+        const pool = SONG_POOLS[artist];
+        if(pool.length < ROUND_SIZE){
+          btn.disabled = true;
+        } else {
+          btn.addEventListener('click', () => startGame(artist));
+        }
+      } else if(mode === 'quiz') {
+        const bank = QUIZ_BANKS[artist] || [];
+        if(bank.length < QUIZ_ROUND_SIZE){
+          btn.disabled = true;
+        } else {
+          btn.addEventListener('click', () => startQuiz(artist));
+        }
+      } else {
+        const pool = SONG_POOLS[artist];
+        if(pool.length < 1){
+          btn.disabled = true;
+        } else {
+          btn.addEventListener('click', () => startTierList(artist));
+        }
+      }
+      artistGrid.appendChild(btn);
+    });
+  }
+
+  function buildSlots(){
+    slotsEl.innerHTML = '';
+    for(let i = 0; i < ROUND_SIZE; i++){
+      const slot = document.createElement('div');
+      slot.className = 'slot empty';
+      slot.dataset.index = i;
+      slot.innerHTML = `<span class="num">${i + 1}</span>`;
+      slot.addEventListener('click', () => placeInSlot(i));
+      slotsEl.appendChild(slot);
+    }
+  }
+
+  function refreshSlots(){
+    const slotEls = slotsEl.querySelectorAll('.slot');
+    slotEls.forEach((el, i) => {
+      if(slots[i]){
+        el.className = 'slot filled';
+        el.innerHTML = `<span class="num">${i + 1}</span><span class="slot-title">${slots[i]}</span>`;
+      } else {
+        el.className = 'slot empty';
+        el.innerHTML = `<span class="num">${i + 1}</span>`;
+      }
+    });
+  }
+
+  function startGame(artist){
+    selectedArtist = artist;
+    const pool = SONG_POOLS[artist];
+    const shuffled = shuffle(pool);
+    const roundSongs = shuffled.slice(0, ROUND_SIZE);
+    extras = shuffled.slice(ROUND_SIZE);
+    queue = roundSongs.slice();
+    slots = new Array(ROUND_SIZE).fill(null);
+    placedCount = 0;
+    swapUsed = false;
+
+    gameArtistLabel.textContent = artist + ' — kör sıralama';
+    buildSlots();
+    swapBtn.disabled = extras.length === 0;
+    swapBtn.textContent = 'Değiştir (1 hakkın var)';
+
+    showScreen(gameScreen);
+    nextSong();
+  }
+
+  function updateProgress(){
+    progressFill.style.width = (placedCount / ROUND_SIZE * 100) + '%';
+    progressLabel.textContent = placedCount + ' / ' + ROUND_SIZE;
+  }
+
+  function nextSong(){
+    if(queue.length === 0) return;
+    currentSong = queue.shift();
+    currentArtist.textContent = selectedArtist;
+    currentTitle.textContent = currentSong;
+    updateProgress();
+  }
+
+  function placeInSlot(index){
+    if(slots[index] !== null) return;
+    slots[index] = currentSong;
+    placedCount++;
+    refreshSlots();
+
+    if(placedCount >= ROUND_SIZE){
+      updateProgress();
+      finishGame();
+      return;
+    }
+    nextSong();
+  }
+
+  function swapSong(){
+    if(swapUsed || extras.length === 0) return;
+    swapUsed = true;
+    swapBtn.disabled = true;
+    swapBtn.textContent = 'Hakkın kullanıldı';
+    const replacement = extras.shift();
+    queue.unshift(replacement);
+    nextSong();
+  }
+
+  function finishGame(){
+    resultArtistLabel.textContent = selectedArtist + ' — sonuç';
+    resultList.innerHTML = '';
+    slots.forEach((song, i) => {
+      const item = document.createElement('div');
+      item.className = 'result-item' + (i === 0 ? ' top' : '');
+      item.innerHTML = `<span class="rank-num">${i + 1}</span><span class="rank-song">${song}</span>`;
+      resultList.appendChild(item);
+    });
+    showScreen(resultScreen);
+  }
+
+  function generateShareImage(){
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    // background
+    const grad = ctx.createRadialGradient(W*0.2,0,0,W*0.2,0,W*0.9);
+    grad.addColorStop(0, '#1a1013');
+    grad.addColorStop(1, '#0B0B0D');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    // eyebrow
+    ctx.fillStyle = '#C81E3A';
+    ctx.font = '600 26px Oswald, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('KÖR SIRALAMA', W/2, 100);
+
+    // title
+    ctx.fillStyle = '#EDEDEE';
+    ctx.font = '700 64px Oswald, sans-serif';
+    ctx.fillText(selectedArtist, W/2, 180);
+
+    // list
+    const startY = 260;
+    const rowH = (H - startY - 100) / ROUND_SIZE;
+    slots.forEach((song, i) => {
+      const y = startY + i * rowH;
+      const isTop = i === 0;
+
+      ctx.fillStyle = isTop ? 'rgba(212,169,75,0.12)' : '#151517';
+      ctx.strokeStyle = isTop ? '#D4A94B' : '#2A2A2E';
+      ctx.lineWidth = 2;
+      const rectX = 60, rectW = W - 120, rectH = rowH - 14;
+      ctx.beginPath();
+      ctx.roundRect(rectX, y, rectW, rectH, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = isTop ? '#D4A94B' : '#8A8A90';
+      ctx.font = '700 34px Oswald, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(String(i+1), rectX + 22, y + rectH/2 + 12);
+
+      ctx.fillStyle = '#EDEDEE';
+      ctx.font = '600 30px Inter, sans-serif';
+      let title = song;
+      while(ctx.measureText(title).width > rectW - 110 && title.length > 3){
+        title = title.slice(0, -1);
+      }
+      if(title !== song) title += '…';
+      ctx.fillText(title, rectX + 80, y + rectH/2 + 11);
+    });
+
+    ctx.fillStyle = '#8A8A90';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('kör sıralama oyunu', W/2, H - 40);
+
+    return canvas;
+  }
+
+  function shareResult(){
+    const canvas = generateShareImage();
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const filename = 'kor-siralama-' + selectedArtist.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '.png';
+
+      if(navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })){
+        const file = new File([blob], filename, { type: 'image/png' });
+        navigator.share({ files: [file], title: 'Kör Sıralama - ' + selectedArtist }).catch(() => {
+          downloadBlob(url, filename);
+        });
+      } else {
+        downloadBlob(url, filename);
+      }
+    }, 'image/png');
+  }
+
+  function downloadBlob(url, filename){
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  // ---- QUIZ MODE ----
+  function startQuiz(artist){
+    selectedArtist = artist;
+    const bank = shuffle(QUIZ_BANKS[artist]).slice(0, QUIZ_ROUND_SIZE);
+    const pool = SONG_POOLS[artist];
+
+    quizQuestions = bank.map(q => {
+      const wrongPool = pool.filter(s => s !== q.correct);
+      const wrongs = shuffle(wrongPool).slice(0, 3);
+      const options = shuffle([q.correct, ...wrongs]);
+      return { lyric: q.lyric, correct: q.correct, options };
+    });
+
+    quizIndex = 0;
+    quizScore = 0;
+    quizReview = [];
+    jokerUsed = false;
+    jokerBtn.disabled = false;
+    jokerBtn.textContent = 'Joker (1 hakkın var)';
+    quizArtistLabel.textContent = artist + ' — söz quizi';
+
+    showScreen(quizScreen);
+    renderQuizQuestion();
+  }
+
+  function renderQuizQuestion(){
+    quizLocked = false;
+    const q = quizQuestions[quizIndex];
+    quizProgressFill.style.width = ((quizIndex) / QUIZ_ROUND_SIZE * 100) + '%';
+    quizProgressLabel.textContent = (quizIndex + 1) + ' / ' + QUIZ_ROUND_SIZE;
+    quizLyric.textContent = q.lyric;
+    quizOptions.innerHTML = '';
+
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-option';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => handleQuizAnswer(opt, btn));
+      quizOptions.appendChild(btn);
+    });
+  }
+
+  function useJoker(){
+    if(jokerUsed || quizLocked) return;
+    const q = quizQuestions[quizIndex];
+    const optionBtns = Array.from(quizOptions.querySelectorAll('.quiz-option'))
+      .filter(b => b.textContent !== q.correct && !b.disabled);
+    if(optionBtns.length === 0) return;
+    const toEliminate = optionBtns[Math.floor(Math.random() * optionBtns.length)];
+    toEliminate.disabled = true;
+    toEliminate.classList.add('eliminated');
+    jokerUsed = true;
+    jokerBtn.disabled = true;
+    jokerBtn.textContent = 'Joker kullanıldı';
+  }
+
+  function handleQuizAnswer(chosen, btnEl){
+    if(quizLocked) return;
+    quizLocked = true;
+    const q = quizQuestions[quizIndex];
+    const isCorrect = chosen === q.correct;
+    if(isCorrect) quizScore++;
+
+    btnEl.classList.add(isCorrect ? 'correct' : 'wrong');
+    quizOptions.querySelectorAll('.quiz-option').forEach(b => b.disabled = true);
+
+    quizReview.push({ lyric: q.lyric, correct: q.correct, chosen, isCorrect });
+
+    setTimeout(() => {
+      quizIndex++;
+      if(quizIndex >= QUIZ_ROUND_SIZE){
+        finishQuiz();
+      } else {
+        renderQuizQuestion();
+      }
+    }, 900);
+  }
+
+  function finishQuiz(){
+    quizResultArtistLabel.textContent = selectedArtist + ' — söz quizi sonucu';
+    quizScoreBig.textContent = quizScore + ' / ' + QUIZ_ROUND_SIZE;
+
+    let subText;
+    const pct = quizScore / QUIZ_ROUND_SIZE;
+    if(pct === 1) subText = 'Tam puan! Gerçek dinleyici.';
+    else if(pct >= 0.7) subText = 'Fena değil, iyi biliyorsun.';
+    else if(pct >= 0.4) subText = 'Orta karar, biraz daha dinlemek lazım.';
+    else subText = 'Daha çok dinlemen gerekiyor gibi.';
+    quizScoreSub.textContent = subText;
+
+    quizReviewList.innerHTML = '';
+    quizReview.forEach((r, i) => {
+      const item = document.createElement('div');
+      item.className = 'review-item ' + (r.isCorrect ? 'ok' : 'no');
+      item.innerHTML = `<span class="mark">${r.isCorrect ? '✓' : '✕'}</span><span class="review-song">${i + 1}. ${r.correct}</span>`;
+      quizReviewList.appendChild(item);
+    });
+
+    showScreen(quizResultScreen);
+  }
+
+  function generateQuizShareImage(){
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    const grad = ctx.createRadialGradient(W*0.2,0,0,W*0.2,0,W*0.9);
+    grad.addColorStop(0, '#1a1013');
+    grad.addColorStop(1, '#0B0B0D');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle = '#C81E3A';
+    ctx.font = '600 26px Oswald, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SÖZ QUİZİ', W/2, 100);
+
+    ctx.fillStyle = '#EDEDEE';
+    ctx.font = '700 60px Oswald, sans-serif';
+    ctx.fillText(selectedArtist, W/2, 180);
+
+    ctx.fillStyle = '#D4A94B';
+    ctx.font = '700 140px Oswald, sans-serif';
+    ctx.fillText(quizScore + ' / ' + QUIZ_ROUND_SIZE, W/2, 400);
+
+    ctx.fillStyle = '#8A8A90';
+    ctx.font = '500 26px Inter, sans-serif';
+    ctx.fillText(quizScoreSub.textContent, W/2, 460);
+
+    const startY = 560;
+    const rowH = (H - startY - 80) / QUIZ_ROUND_SIZE;
+    quizReview.forEach((r, i) => {
+      const y = startY + i * rowH;
+      ctx.fillStyle = r.isCorrect ? 'rgba(62,166,92,0.12)' : 'rgba(200,30,58,0.10)';
+      ctx.strokeStyle = r.isCorrect ? '#3EA65C' : '#C81E3A';
+      ctx.lineWidth = 2;
+      const rectX = 60, rectW = W - 120, rectH = rowH - 10;
+      ctx.beginPath();
+      ctx.roundRect(rectX, y, rectW, rectH, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = r.isCorrect ? '#3EA65C' : '#C81E3A';
+      ctx.font = '700 26px Oswald, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(r.isCorrect ? '✓' : '✕', rectX + 18, y + rectH/2 + 9);
+
+      ctx.fillStyle = '#EDEDEE';
+      ctx.font = '600 24px Inter, sans-serif';
+      let title = r.correct;
+      while(ctx.measureText(title).width > rectW - 80 && title.length > 3){
+        title = title.slice(0, -1);
+      }
+      if(title !== r.correct) title += '…';
+      ctx.fillText(title, rectX + 56, y + rectH/2 + 8);
+    });
+
+    ctx.fillStyle = '#8A8A90';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('söz quizi oyunu', W/2, H - 30);
+
+    return canvas;
+  }
+
+  function shareQuizResult(){
+    const canvas = generateQuizShareImage();
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const filename = 'soz-quizi-' + selectedArtist.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '.png';
+
+      if(navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })){
+        const file = new File([blob], filename, { type: 'image/png' });
+        navigator.share({ files: [file], title: 'Söz Quizi - ' + selectedArtist }).catch(() => {
+          downloadBlob(url, filename);
+        });
+      } else {
+        downloadBlob(url, filename);
+      }
+    }, 'image/png');
+  }
+
+  // ---- TOURNAMENT MODE ----
+  function getAllSongs(){
+    const all = [];
+    Object.keys(SONG_POOLS).forEach(artist => {
+      SONG_POOLS[artist].forEach(song => all.push({ song, artist }));
+    });
+    return all;
+  }
+
+  function largestPowerOfTwo(n){
+    return Math.pow(2, Math.floor(Math.log2(n)));
+  }
+
+  function buildMatchQueue(pool){
+    const queue = [];
+    for(let i = 0; i < pool.length; i += 2){
+      queue.push([pool[i], pool[i + 1]]);
+    }
+    return queue;
+  }
+
+  const TOURNAMENT_SIZES = [32, 64, 128, 256];
+
+  function buildTourSizeGrid(){
+    const total = getAllSongs().length;
+    const maxSize = largestPowerOfTwo(total);
+    tourSizeGrid.innerHTML = '';
+    TOURNAMENT_SIZES.forEach(size => {
+      const btn = document.createElement('button');
+      btn.className = 'artist-btn';
+      btn.textContent = size;
+      if(size > maxSize){
+        btn.disabled = true;
+      } else {
+        btn.addEventListener('click', () => startTournament(size));
+      }
+      tourSizeGrid.appendChild(btn);
+    });
+    document.getElementById('tourSizeSub').textContent =
+      'Veritabanında toplam ' + total + ' şarkı var. İstediğin boyutta bir turnuva seç.';
+  }
+
+  function startTournament(requestedSize){
+    const all = shuffle(getAllSongs());
+    const maxSize = largestPowerOfTwo(all.length);
+    tourBracketSize = Math.max(2, Math.min(requestedSize || maxSize, maxSize));
+    tourRoundPool = all.slice(0, tourBracketSize);
+    tourTotalRounds = Math.log2(tourBracketSize);
+    tourCurrentRound = 1;
+    tourRoundWinners = [];
+    tourMatchQueue = buildMatchQueue(tourRoundPool);
+    tourMatchIndex = 0;
+    tourMatchesDone = 0;
+    tourTotalMatches = tourBracketSize - 1;
+
+    showScreen(tournamentScreen);
+    renderMatch();
+  }
+
+  function renderMatch(){
+    if(tourMatchIndex >= tourMatchQueue.length){
+      if(tourRoundWinners.length === 1){
+        finishTournament(tourRoundWinners[0]);
+        return;
+      }
+      tourRoundPool = shuffle(tourRoundWinners);
+      tourRoundWinners = [];
+      tourCurrentRound++;
+      tourMatchQueue = buildMatchQueue(tourRoundPool);
+      tourMatchIndex = 0;
+    }
+
+    const pair = tourMatchQueue[tourMatchIndex];
+    tourTitleA.textContent = pair[0].song;
+    tourArtistA.textContent = pair[0].artist;
+    tourTitleB.textContent = pair[1].song;
+    tourArtistB.textContent = pair[1].artist;
+
+    const roundSize = tourMatchQueue.length * 2;
+    tourRoundLabel.textContent = roundSize === 2 ? 'Final' : (roundSize + '\'lik Tur');
+    tourProgressLabel.textContent = tourMatchesDone + ' / ' + tourTotalMatches;
+    tourProgressFill.style.width = (tourMatchesDone / tourTotalMatches * 100) + '%';
+
+    tourCardA.onclick = () => pickWinner(pair[0]);
+    tourCardB.onclick = () => pickWinner(pair[1]);
+  }
+
+  function pickWinner(winner){
+    tourRoundWinners.push(winner);
+    tourMatchIndex++;
+    tourMatchesDone++;
+    renderMatch();
+  }
+
+  function finishTournament(champion){
+    championSong.textContent = champion.song;
+    championArtist.textContent = champion.artist;
+    showScreen(tourResultScreen);
+  }
+
+  function generateTournamentShareImage(champion){
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    const grad = ctx.createRadialGradient(W*0.2,0,0,W*0.2,0,W*0.9);
+    grad.addColorStop(0, '#1a1013');
+    grad.addColorStop(1, '#0B0B0D');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle = '#C81E3A';
+    ctx.font = '600 28px Oswald, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TURNUVA ŞAMPİYONU', W/2, 140);
+
+    ctx.fillStyle = '#D4A94B';
+    ctx.font = '700 64px Oswald, sans-serif';
+    let title = champion.song;
+    while(ctx.measureText(title).width > W - 140 && title.length > 3){
+      title = title.slice(0, -1);
+    }
+    if(title !== champion.song) title += '…';
+    ctx.fillText(title, W/2, 400);
+
+    ctx.fillStyle = '#8A8A90';
+    ctx.font = '500 30px Inter, sans-serif';
+    ctx.fillText(champion.artist.toUpperCase(), W/2, 460);
+
+    ctx.fillStyle = '#8A8A90';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(tourBracketSize + ' şarkı arasından birinci', W/2, H - 60);
+    ctx.fillText('kör sıralama turnuvası', W/2, H - 30);
+
+    return canvas;
+  }
+
+  function shareTournamentResult(){
+    const champion = { song: championSong.textContent, artist: championArtist.textContent };
+    const canvas = generateTournamentShareImage(champion);
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const filename = 'turnuva-sampiyonu.png';
+
+      if(navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })){
+        const file = new File([blob], filename, { type: 'image/png' });
+        navigator.share({ files: [file], title: 'Turnuva Şampiyonu' }).catch(() => {
+          downloadBlob(url, filename);
+        });
+      } else {
+        downloadBlob(url, filename);
+      }
+    }, 'image/png');
+  }
+
+  // ---- TIER LIST MODE ----
+  function buildTierBtnGrid(){
+    tierBtnGrid.innerHTML = '';
+    TIER_CATEGORIES.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'tier-btn';
+      btn.textContent = cat.key;
+      btn.style.background = cat.color;
+      btn.addEventListener('click', () => assignTier(cat.key));
+      tierBtnGrid.appendChild(btn);
+    });
+  }
+
+  function startTierList(artist){
+    tierArtist = artist;
+    tierSongs = shuffle(SONG_POOLS[artist]);
+    tierIndex = 0;
+    tierAssignments = {};
+    TIER_CATEGORIES.forEach(cat => { tierAssignments[cat.key] = []; });
+
+    tierArtistLabel.textContent = artist + ' — tier list';
+    buildTierBtnGrid();
+    showScreen(tierScreen);
+    renderTierSong();
+  }
+
+  function renderTierSong(){
+    if(tierIndex >= tierSongs.length){
+      finishTierList();
+      return;
+    }
+    tierCurrentArtist.textContent = tierArtist;
+    tierCurrentTitle.textContent = tierSongs[tierIndex];
+    tierProgressLabel.textContent = tierIndex + ' / ' + tierSongs.length;
+    tierProgressFill.style.width = (tierIndex / tierSongs.length * 100) + '%';
+  }
+
+  function assignTier(category){
+    tierAssignments[category].push(tierSongs[tierIndex]);
+    tierIndex++;
+    renderTierSong();
+  }
+
+  function finishTierList(){
+    tierResultArtistLabel.textContent = tierArtist + ' — tier list sonucu';
+    tierResultList.innerHTML = '';
+    TIER_CATEGORIES.forEach(cat => {
+      const songs = tierAssignments[cat.key];
+      const row = document.createElement('div');
+      row.className = 'tier-row';
+      const label = document.createElement('div');
+      label.className = 'tier-row-label';
+      label.style.background = cat.color;
+      label.textContent = cat.key;
+      const songsWrap = document.createElement('div');
+      songsWrap.className = 'tier-row-songs';
+      if(songs.length === 0){
+        songsWrap.innerHTML = '<span class="tier-row-empty">boş</span>';
+      } else {
+        songs.forEach(s => {
+          const chip = document.createElement('span');
+          chip.className = 'tier-chip';
+          chip.textContent = s;
+          songsWrap.appendChild(chip);
+        });
+      }
+      row.appendChild(label);
+      row.appendChild(songsWrap);
+      tierResultList.appendChild(row);
+    });
+    showScreen(tierResultScreen);
+  }
+
+  function generateTierShareImage(){
+    const canvas = document.getElementById('shareCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    ctx.fillStyle = '#0B0B0D';
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle = '#C81E3A';
+    ctx.font = '600 26px Oswald, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('TIER LIST', W/2, 70);
+
+    ctx.fillStyle = '#EDEDEE';
+    ctx.font = '700 52px Oswald, sans-serif';
+    ctx.fillText(tierArtist, W/2, 130);
+
+    const startY = 175;
+    const rowH = (H - startY - 30) / TIER_CATEGORIES.length;
+
+    TIER_CATEGORIES.forEach((cat, i) => {
+      const y = startY + i * rowH;
+      const labelW = 190;
+
+      ctx.fillStyle = cat.color;
+      ctx.fillRect(40, y, labelW, rowH - 8);
+      ctx.fillStyle = '#14140f';
+      ctx.font = '700 24px Oswald, sans-serif';
+      ctx.textAlign = 'center';
+      // wrap label if needed (simple: shrink font for long labels)
+      let labelFont = 24;
+      ctx.font = '700 ' + labelFont + 'px Oswald, sans-serif';
+      while(ctx.measureText(cat.key).width > labelW - 16 && labelFont > 12){
+        labelFont -= 2;
+        ctx.font = '700 ' + labelFont + 'px Oswald, sans-serif';
+      }
+      ctx.fillText(cat.key, 40 + labelW/2, y + (rowH-8)/2 + labelFont/3);
+
+      ctx.fillStyle = '#151517';
+      ctx.fillRect(40 + labelW + 6, y, W - 80 - labelW - 6, rowH - 8);
+
+      const songs = tierAssignments[cat.key];
+      ctx.fillStyle = '#EDEDEE';
+      ctx.font = '500 18px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      let text = songs.length > 0 ? songs.join('  •  ') : '—';
+      const maxW = W - 80 - labelW - 6 - 24;
+      while(ctx.measureText(text).width > maxW && text.length > 3){
+        text = text.slice(0, -1);
+      }
+      if(text.length < (songs.join('  •  ')).length) text += '…';
+      ctx.fillText(text, 40 + labelW + 18, y + (rowH-8)/2 + 6);
+    });
+
+    return canvas;
+  }
+
+  function shareTierResult(){
+    const canvas = generateTierShareImage();
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const filename = 'tier-list-' + tierArtist.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '.png';
+
+      if(navigator.canShare && navigator.canShare({ files: [new File([blob], filename, { type: 'image/png' })] })){
+        const file = new File([blob], filename, { type: 'image/png' });
+        navigator.share({ files: [file], title: 'Tier List - ' + tierArtist }).catch(() => {
+          downloadBlob(url, filename);
+        });
+      } else {
+        downloadBlob(url, filename);
+      }
+    }, 'image/png');
+  }
+
+  swapBtn.addEventListener('click', swapSong);
+
+  let restartConfirming = false;
+  let restartTimeout = null;
+  restartBtn.addEventListener('click', () => {
+    if(!restartConfirming){
+      restartConfirming = true;
+      restartBtn.textContent = 'Emin misin? Tekrar tıkla';
+      restartBtn.style.borderColor = 'var(--red)';
+      restartBtn.style.color = 'var(--red)';
+      restartTimeout = setTimeout(() => {
+        restartConfirming = false;
+        restartBtn.textContent = 'Baştan Yap';
+        restartBtn.style.borderColor = '';
+        restartBtn.style.color = '';
+      }, 3000);
+      return;
+    }
+    clearTimeout(restartTimeout);
+    restartConfirming = false;
+    restartBtn.textContent = 'Baştan Yap';
+    restartBtn.style.borderColor = '';
+    restartBtn.style.color = '';
+    startGame(selectedArtist);
+  });
+
+  againBtn.addEventListener('click', () => startGame(selectedArtist));
+  changeArtistBtn.addEventListener('click', () => { buildArtistGrid('rank'); showScreen(artistScreen); });
+  shareBtn.addEventListener('click', shareResult);
+
+  rankModeBtn.addEventListener('click', () => { buildArtistGrid('rank'); showScreen(artistScreen); });
+  quizModeBtn.addEventListener('click', () => { buildArtistGrid('quiz'); showScreen(artistScreen); });
+  backToModeBtn.addEventListener('click', () => showScreen(modeScreen));
+
+  quizAgainBtn.addEventListener('click', () => startQuiz(selectedArtist));
+  quizChangeArtistBtn.addEventListener('click', () => { buildArtistGrid('quiz'); showScreen(artistScreen); });
+  quizShareBtn.addEventListener('click', shareQuizResult);
+  jokerBtn.addEventListener('click', useJoker);
+
+  tournamentModeBtn.addEventListener('click', () => { buildTourSizeGrid(); showScreen(tourSizeScreen); });
+  backToModeFromSizeBtn.addEventListener('click', () => showScreen(modeScreen));
+
+  let quitConfirming = false;
+  let quitTimeout = null;
+  tourQuitBtn.addEventListener('click', () => {
+    if(!quitConfirming){
+      quitConfirming = true;
+      tourQuitBtn.textContent = 'Emin misin? Tekrar tıkla';
+      tourQuitBtn.style.borderColor = 'var(--red)';
+      tourQuitBtn.style.color = 'var(--red)';
+      quitTimeout = setTimeout(() => {
+        quitConfirming = false;
+        tourQuitBtn.textContent = 'Turnuvayı Terk Et';
+        tourQuitBtn.style.borderColor = '';
+        tourQuitBtn.style.color = '';
+      }, 3000);
+      return;
+    }
+    clearTimeout(quitTimeout);
+    quitConfirming = false;
+    tourQuitBtn.textContent = 'Turnuvayı Terk Et';
+    tourQuitBtn.style.borderColor = '';
+    tourQuitBtn.style.color = '';
+    showScreen(modeScreen);
+  });
+
+  tourAgainBtn.addEventListener('click', () => { buildTourSizeGrid(); showScreen(tourSizeScreen); });
+  tourMenuBtn.addEventListener('click', () => showScreen(modeScreen));
+  tourShareBtn.addEventListener('click', shareTournamentResult);
+
+  tierModeBtn.addEventListener('click', () => { buildArtistGrid('tier'); showScreen(artistScreen); });
+  tierAgainBtn.addEventListener('click', () => startTierList(tierArtist));
+  tierChangeArtistBtn.addEventListener('click', () => { buildArtistGrid('tier'); showScreen(artistScreen); });
+  tierShareBtn.addEventListener('click', shareTierResult);
+</script>
+</body>
+</html>
